@@ -4,38 +4,38 @@
 # # Task 1
 # Basic imports and read in the dataset
 
-# In[57]:
+# In[5]:
 
 import numpy as np
 import pandas as pd
 import math
 
 
-# In[9]:
+# In[6]:
 
 # import the mushroom dataset
 mush = pd.read_csv('mushrooms.csv')
 
 
-# In[142]:
+# In[ ]:
 
-mushroom
+
 
 
 # # Task 2
 # Gather some basic sense of the data
 
-# In[15]:
+# In[7]:
 
 mush.dtypes
 
 
-# In[16]:
+# In[8]:
 
 mush.describe()
 
 
-# In[19]:
+# In[9]:
 
 mush.isnull().sum()
 
@@ -44,7 +44,21 @@ mush.isnull().sum()
 # Create functions for Entropy and Information Gain calculations.
 # These will then be used to determine the best splits for a tree-based classification model
 
-# In[237]:
+# <h3> Entropy </h3>
+# &nbsp; Entropy is a measure of disorder that can be applied to a set.
+# Technically, Entropy is defined as: 
+# <center><b>entropy</b> = -p<sub>1</sub>log(p<sub>1</sub>) - p<sub>2</sub>log(p<sub>2</sub>) - ... - p<sub>n</sub>log(p<sub>n</sub>)  </center>
+# <Br>
+# <dl>
+# <dt> n : the number of properties </dt>
+# 
+# <dt>p<sub>i</sub> : the probability of property i within the set.</dt>
+#     <dd> &nbsp; Ranges from p<sub>i</sub> = 1 (all members of a set have the same property, specifically property <i>i</i>) to p<sub>i</sub> = 0 (no members of the set have property <i>i</i>)  </dd>
+# 
+# </dl>
+#     
+
+# In[10]:
 
 def computeEntropy(series):
     numrows = float(len(series))
@@ -66,25 +80,25 @@ def computeEntropy(series):
         
 
 
-# In[238]:
+# In[11]:
 
 computeEntropy(mush['ring-number'])
 
 
 # Make sure this function works properly:
 
-# In[164]:
+# In[12]:
 
 series = mush['cap-shape']
 len(series)
 
 
-# In[165]:
+# In[13]:
 
 series.value_counts()
 
 
-# In[200]:
+# In[14]:
 
 p_1 = float(3656)/float(8124)
 p_2 = float(3152)/float(8124)
@@ -99,12 +113,27 @@ print -entropy
 print p_1+p_2+p_3+p_4+p_5+p_6
 
 
-# In[219]:
+# In[15]:
 
 mush['ring-number'].value_counts()
 
 
-# In[241]:
+# <h2>Information Gain</h2>
+# &nbsp; Information Gain measures the increase (or decreasue) in entropy of a set compared to its parent. Ex) how much would our knowledge increase, if we split our parent set on a certain attribute.
+# 
+# Technically, Information Gain of a split is:
+# <center> <i><b>IG(parent,children)</b> = entropy(parent) -
+# [ p(c<sub>1</sub>) x entropy(c<sub>1</sub>) + p(c<sub>2</sub>) x entropy(c<sub>2</sub>) + ... ] </i>
+# </center>
+# <br>
+# <dl>
+# <dt>c<sub>i</sub> : represents the <i>i</i>th child set out of <i>n</i> total child sets</dt>
+# <dt> p(c<sub>i</sub>) : the proportion of instances belonging to child set <i>i</i></dt>
+# </dl>
+# 
+# note that the entropy of each child set is weighted by the proportion of instances belonging to that set
+
+# In[16]:
 
 def informationGain(dataset, split_feature, target):
     cols = []
@@ -128,28 +157,109 @@ def informationGain(dataset, split_feature, target):
     
 
 
-# In[242]:
+# In[17]:
 
 informationGain(mush, 'ring-number', 'class')
 
 
 # Great, now lets loop through all columns and see which gives the best information gain. All IG's are between 0 and 1 with odor as the greatest, as expected.
 
-# In[243]:
+# In[18]:
 
 for col in mush.columns:
     if col != 'class':
         print col, informationGain(mush, col, 'class')
 
 
-# In[181]:
+# In[19]:
 
 mush.head()
 
 
-# In[184]:
+# In[27]:
 
-mush.loc[mush['cap-shape'] == 'x']
+mush[['class']].head()
+
+
+# <b>cool, thats it on this subject from the book so imma throw a decision tree in here and then try to visualize it</b>
+
+# In[23]:
+
+from sklearn.model_selection import train_test_split
+from sklearn import tree
+
+
+# In[29]:
+
+X = mush.drop('class', axis=1)
+y = mush[['class']]
+
+
+# In[41]:
+
+#must convert y from categorical to numerical for the classifier
+mapping = {'p':0, 'e':1}
+#y = y.replace({'class':mapping})
+
+
+# In[46]:
+
+X = pd.get_dummies(X, drop_first=True)
+
+
+# In[48]:
+
+X_train, X_test, y_train, y_test = train_test_split(X,y,test_size = 0.25)
+
+
+# In[49]:
+
+clf = tree.DecisionTreeClassifier()
+
+
+# In[51]:
+
+clf = clf.fit(X_train,y_train)
+
+
+# In[53]:
+
+import graphviz
+dot_data = tree.export_graphviz(clf,out_file=None)
+graph = graphviz.Source(dot_data)
+graph.render("mushroom")
+
+
+# In[56]:
+
+dot_data = tree.export_graphviz(clf, out_file=None, 
+                         feature_names=X.columns,  
+                         class_names='isEdible',  
+                         filled=True, rounded=True,  
+                         special_characters=True) 
+
+
+# In[57]:
+
+graph = graphviz.Source(dot_data)
+graph.render("mushroom2")
+
+
+# In[58]:
+
+graph
+
+
+# <h3> Now will do a prediction or 2</h3>
+
+# In[63]:
+
+clf.predict(X_test)
+
+
+# In[64]:
+
+clf.score(X_test, y_test)
 
 
 # In[ ]:
